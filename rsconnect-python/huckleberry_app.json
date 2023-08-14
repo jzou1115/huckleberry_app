@@ -1,0 +1,12 @@
+{
+    "https://api.shinyapps.io": {
+        "server_url": "https://api.shinyapps.io",
+        "filename": "/Users/jenniferzou1/Documents/huckleberry/huckleberry_app",
+        "app_url": "https://jzou.shinyapps.io/huckleberry/",
+        "app_id": 9605494,
+        "app_guid": null,
+        "title": "huckleberry",
+        "app_mode": "python-shiny",
+        "app_store_version": 1
+    }
+}

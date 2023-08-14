@@ -120,8 +120,8 @@ def plot_cum_dist(df, var):
         df["cum_oz"] = cum_oz
         sns.lineplot(data = df, x = "start_day", y = cum_oz)
         plt.ylabel("Oz of formula or breast milk")
-    plt.xticks(rotation=90)
 
+    plt.xticks(rotation=90)
     return fig
 
 #def aggregate_by_start_day(df):
@@ -180,7 +180,8 @@ def server(input, output, session):
         var = input.var()
 
         plot_cum_dist(df, var)
-
+        plt.tight_layout()
+        
         with io.BytesIO() as buf:
             plt.savefig(buf, format="png")
             yield buf.getvalue()
