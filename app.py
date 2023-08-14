@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy.stats import pearsonr
 from sklearn.linear_model import LinearRegression
+import pandas as pd
 
 def make_example(id: str, label: str, title: str, desc: str, extra: Any = None):
     return ui.column(
@@ -50,11 +51,11 @@ app_ui = ui.page_fluid(
     #         desc="Downloads a cumulative distribution of a variable",
     #         extra=[
     #             ui.input_select(
-    #                 "state",
-    #                 "Choose a state:",
+    #                 "var",
+    #                 "Choose a variable:",
     #                 ["Diapers", "Breast Feeding", "Formula"]
     #             ),
-    #             ui.output_plot("diaper_types_plot")
+    #             ui.output_plot("cum_dist_plot")
     #         ],
     #     ),
     # ),
@@ -66,8 +67,15 @@ def read_input_file1(input):
         return None
     
     infile = file_info[0]["datapath"]
-    df = pl.read_csv(infile)
+    df = pd.read_csv(infile)
+
+    #df["start_day"] = pd.to_datetime([t.split()[0] if type(t) is str else np.nan for t in df["Start"]],  format='%m/%d/%y')
+    #df["end_day"] = pd.to_datetime([t.split()[0] if type(t) is str else np.nan for t in df["End"]],  format='%m/%d/%y')
+
     return df
+
+#def aggregate_by_day(df):
+
 
 
 def server(input, output, session):    
@@ -115,7 +123,53 @@ def server(input, output, session):
         if df is None:
             return
         
-        df = df.filter(pl.col("Type") == "Diaper")
+        df = df[df["Type"] == "Diaper"]
+
+        counts = df.groupby("End Condition")["Start"].count()  # count group members
+        sns.barplot(x = counts.index, y = counts)
+        plt.title(input.title())
+        plt.xlabel("Count")
+
+        with io.BytesIO() as buf:
+            plt.savefig(buf, format="png")
+            yield buf.getvalue()
+
+    @output
+    @render.plot(alt="A histogram")
+    def diaper_types_plot():
+        df = read_input_file1(input)
+        if df is None:
+            return
+        
+        df = df[df["Type"] == "Diaper"]
+
+        counts = df.groupby("End Condition")["Start"].count()  # count group members
+        sns.barplot(x = counts.index, y = counts)
+        plt.title(input.title())
+        plt.xlabel("Count")
+
+    #Cumulative distribution of diapers, time spent breast feeding, oz of formula
+    @session.download(filename="cum_dist.png")
+    def cum_dist():
+
+        df = read_input_file1(input)
+        if df is None:
+            return
+        
+        var = input.var()
+        assert var in ["Diapers", "Breast Feeding", "Formula"]
+
+        if var == "Diapers":
+            df = df.filter(pl.col("Type") == "Diaper")
+        elif var == "Breast Feeding":
+            df = df.filter((pl.col("Type") == "Feed") & 
+                           (pl.col("Start Condition") == "Breast Milk"))
+        else:
+            df = df.filter((pl.col("Type") == "Feed") & 
+                           (pl.col("Start Condition") == "Formula")) #TODO: check to make sure this is what huckleberry does
+
+        #df_day = aggregate_by_day(df)
+
 
         counts = df.groupby("End Condition").agg(
             pl.col("Start").count().alias("count"),  # count group members, assumes that start date/time is unique for each entry
@@ -135,7 +189,7 @@ def server(input, output, session):
 
     @output
     @render.plot(alt="A histogram")
-    def diaper_types_plot():
+    def cum_dist_plot():
         df = read_input_file1(input)
         if df is None:
             return
@@ -153,8 +207,6 @@ def server(input, output, session):
         sns.barplot(x = x, y = y)
         plt.title(input.title())
         plt.xlabel("Count")
-
-    #Cumulative distribution of diapers, time spent breast feeding, oz of formula
 
     #Regression of time nursing & hours slept / oz of formula & hours slept
 
