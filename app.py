@@ -69,7 +69,10 @@ def read_input_file1(input):
     infile = file_info[0]["datapath"]
     df = pd.read_csv(infile)
 
-    df["start_day"] = pd.to_datetime([t.split()[0] if type(t) is str else np.nan for t in df["Start"]],  format='%m/%d/%y')
+    try:
+        df["start_day"] = pd.to_datetime([t.split()[0] if type(t) is str else np.nan for t in df["Start"]],  format='%m/%d/%y')
+    except:
+        df["start_day"] = pd.to_datetime([t.split()[0] if type(t) is str else np.nan for t in df["Start"]],  format='%Y/%m/%d')
     #df["end_day"] = pd.to_datetime([t.split()[0] if type(t) is str else np.nan for t in df["End"]],  format='%m/%d/%y')
 
     return df
@@ -181,7 +184,7 @@ def server(input, output, session):
 
         plot_cum_dist(df, var)
         plt.tight_layout()
-        
+
         with io.BytesIO() as buf:
             plt.savefig(buf, format="png")
             yield buf.getvalue()
